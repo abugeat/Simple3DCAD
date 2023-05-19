@@ -2,9 +2,12 @@
 A simple 3D CAD web app 
 
 ## To Do
-- Drag and drop cubes
+- Function to drag and drop a cube
 - Click and drag elements, faces, edges, vertex
-- Rotate element
+- Rotate elements
+- Create the obj, stl, and other file format importers
+
+Later:
 - Allow CTRL + Z and CTRL + Y
-- *Copy andrewmarsh*
+- *Copy andrewmarsh ;)*
 - best Edit a 3D model imported
