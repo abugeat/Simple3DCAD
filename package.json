@@ -1,0 +1,27 @@
+{
+  "name": "simple3dcad",
+  "version": "1.0.0",
+  "description": "A simple 3D CAD web app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abugeat/Simple3DCAD.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/abugeat/Simple3DCAD/issues"
+  },
+  "homepage": "https://github.com/abugeat/Simple3DCAD#readme",
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.0.2",
+    "rollup": "^3.22.0"
+  },
+  "dependencies": {
+    "three": "^0.152.2"
+  }
+}

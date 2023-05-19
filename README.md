@@ -11,3 +11,6 @@ Later:
 - Allow CTRL + Z and CTRL + Y
 - *Copy andrewmarsh ;)*
 - best Edit a 3D model imported
+
+## Notes
+- Uses rollup to bundle the code. `rollup -c -w`
