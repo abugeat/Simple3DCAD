@@ -36207,7 +36207,6 @@ function onPointerMove( event ) {
         if ( res && res.object ) {
 
             selectedObject = res.object;
-            console.log(selectedObject);
             selectedObject.material.color.set( '#f00' );
 
         }
