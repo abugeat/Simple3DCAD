@@ -7,11 +7,17 @@
     <!-- <script src="https://unpkg.com/solar-calculator@0.2/dist/solar-calculator.min.js"></script> -->
 </head>
 <body>
+    <div id="borderN" class="fake-border"></div>
+    <div id="borderE" class="fake-border"></div>
+    <div id="borderS" class="fake-border"></div>
+    <div id="borderW" class="fake-border"></div>
+
     <input id = "inputfile" type="file" accept=".stl,.glb,.obj,.ifc" style = "display: none;"/>
     <script type="module" src="./simple3dcad_bundle.js"></script>
     <div id="loading" style="display: none;">
         <div>Loading...</div>
         <div id="loading-spinner"></div>
     </div>
+
 </body>
 </html>
