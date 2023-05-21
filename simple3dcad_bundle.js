@@ -38353,6 +38353,7 @@ geometry = null;
 
 let material = new MeshPhongMaterial( { color: 0x999999 , side: DoubleSide} );
 let materialSelected = new MeshPhongMaterial( { color: '#00b16a' , side: DoubleSide} );
+let materialHover = new MeshPhongMaterial( { color: '#ff6347' , side: DoubleSide} );
 // geometry = new THREE.BufferGeometry();
 // geometry = new THREE.SphereGeometry(1);
 
@@ -38448,9 +38449,8 @@ function init() {
 	}, false );
 
     document.addEventListener( 'pointermove', onPointerMove );
+	document.addEventListener( 'dblclick', onMouseDown );
 }
-
-
 
 function addCube() {
 	let randomSize = [
@@ -38534,6 +38534,35 @@ function onPointerMove( event ) {
 
     // const intersects = raycaster.intersectObject( containerObj, true );
     const intersects = raycaster.intersectObject( scene.children[3], true );
+	
+    if ( intersects.length > 0 ) {
+
+        const res = intersects.filter( function ( res ) {
+            return res && res.object;
+        })[0];
+
+        if ( res && res.object) {
+            selectedObject = res.object;
+            selectedObject.material = materialHover;
+			// transformControl.attach( selectedObject );
+        }
+
+    }
+
+    renderer.render( scene, camera );
+
+}
+
+function onMouseDown(event) {
+	// isMouseDown = true;
+
+	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+    pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+    raycaster.setFromCamera( pointer, camera );
+
+    // const intersects = raycaster.intersectObject( containerObj, true );
+    const intersects = raycaster.intersectObject( scene.children[3], true );
 
     if ( intersects.length > 0 ) {
 
@@ -38543,7 +38572,6 @@ function onPointerMove( event ) {
 
         if ( res && res.object) {
             selectedObject = res.object;
-			console.log(selectedObject);
             selectedObject.material = materialSelected;
 			transformControl.attach( selectedObject );
         }
@@ -38551,5 +38579,4 @@ function onPointerMove( event ) {
     }
 
     renderer.render( scene, camera );
-
-}
+  }
