@@ -6,6 +6,7 @@ import {
 	SAH,
 } from 'three-mesh-bvh';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 
@@ -14,11 +15,16 @@ THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
 // Global variables
-let renderer, scene, camera, controls;
-let mesh, geometry, material, containerObj;
+let renderer, scene, camera, controls, transformControl;
+let mesh, geometry, containerObj;
 let selectedObject = null;
+geometry = null;
+
+
+let material = new THREE.MeshPhongMaterial( { color: 0x999999 , side: THREE.DoubleSide} );
+let materialSelected = new THREE.MeshPhongMaterial( { color: '#00b16a' , side: THREE.DoubleSide} );
 // geometry = new THREE.BufferGeometry();
-geometry = new THREE.SphereGeometry(1);
+// geometry = new THREE.SphereGeometry(1);
 
 const pointer = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
@@ -31,7 +37,12 @@ raycaster.firstHitOnly = true;
 //     { color: 0xff6347, transparent: true, opacity:0.5 }
 // );
 
+
+
 init();
+
+addCube();
+addCube();
 addCube();
 
 function init() {
@@ -58,12 +69,11 @@ function init() {
 	light2.position.set( -1, 0.5, -1 );
 	scene.add( light2 );
 	// scene.add( new THREE.AmbientLight( 0xffffff, 0.5 ) );
-	scene.background = new THREE.Color( 0xffffff );
+	scene.background = new THREE.Color( "#2e3331" );
 
 
 	// geometry setup
 	containerObj = new THREE.Object3D();
-	material = new THREE.MeshPhongMaterial( { color: 0x999999 , side: THREE.DoubleSide} );
 	scene.add( containerObj );
 
 	// camera setup
@@ -81,6 +91,15 @@ function init() {
 	controls.addEventListener('change', function(){
 		renderer.render( scene, camera );
 	});
+
+	// TransformControl setup
+	transformControl = new TransformControls(camera, renderer.domElement);
+	transformControl.setMode('translate'); // 'translate', 'rotate' or 'scale'
+	transformControl.addEventListener( 'dragging-changed', function ( event ) {
+		controls.enabled = ! event.value;
+	} );
+
+	scene.add(transformControl);
 
     // lil-gui setup
     const gui = new dat.GUI();
@@ -101,14 +120,59 @@ function init() {
     document.addEventListener( 'pointermove', onPointerMove );
 }
 
-function addCube() {
-    let geometry_cube = new THREE.BoxGeometry( 0.5, 1, 1.5 );
-    let mesh_cube = new THREE.Mesh( geometry_cube, material );
-    mesh_cube.position.set(0, 0, 0);
-    geometry_cube
-    containerObj.add( mesh_cube );
 
-    geometry = BufferGeometryUtils.mergeGeometries([geometry, geometry_cube]);
+
+function addCube() {
+	let randomSize = [
+		Math.random() * 0.5 + 0.1, 
+		Math.random() * 0.5 + 0.1, 
+		Math.random() * 0.5 + 0.1
+	];
+	let randomPosition = [
+		Math.random() * 1, 
+		Math.random() * 1, 
+		Math.random() * 1
+	];
+
+	let geometry_cube = new THREE.BoxGeometry(
+		randomSize[0],
+		randomSize[1],
+		randomSize[2]
+	);
+    let mesh_cube = new THREE.Mesh( geometry_cube, material );
+    mesh_cube.position.set(
+		randomPosition[0],
+		randomPosition[1],
+		randomPosition[2]
+	);
+
+	containerObj.add( mesh_cube );
+
+	// // add the control
+	// let transformcontrol = new TransformControls( camera, renderer.domElement );
+	// transformcontrol.addEventListener( 'change', function(){
+	// 	renderer.render( scene, camera )
+	// }) ;
+	// scene.add(transformcontrol);
+	// transformcontrol.attach( mesh_cube );
+	// transformcontrol.setMode( 'translate' ); // 'translate', 'rotate' or 'scale'
+	// transformcontrol.addEventListener( 'dragging-changed', function ( event ) {
+	// 	controls.enabled = ! event.value;
+	// } );
+
+	transformControl.attach( mesh_cube );
+
+
+	mesh_cube.addEventListener( 'click', function () {
+		transformcontrol.visible = !transformcontrol.visible;
+	} );
+	
+
+	if (geometry == null) {
+    	geometry = geometry_cube;
+	} else {
+		geometry = BufferGeometryUtils.mergeGeometries([geometry, geometry_cube]);
+	}
 
     renderer.render( scene, camera );
 
@@ -129,8 +193,7 @@ function onPointerMove( event ) {
 
     if ( selectedObject ) {
 
-        selectedObject.material.color.set( '#69f' );
-        selectedObject = null;
+        selectedObject.material= material;
 
     }
 
@@ -139,21 +202,20 @@ function onPointerMove( event ) {
 
     raycaster.setFromCamera( pointer, camera );
 
-    const intersects = raycaster.intersectObject( containerObj, true );
+    // const intersects = raycaster.intersectObject( containerObj, true );
+    const intersects = raycaster.intersectObject( scene.children[3], true );
 
     if ( intersects.length > 0 ) {
 
         const res = intersects.filter( function ( res ) {
-
             return res && res.object;
+        })[0];
 
-        } )[ 0 ];
-
-        if ( res && res.object ) {
-
+        if ( res && res.object) {
             selectedObject = res.object;
-            selectedObject.material.color.set( '#f00' );
-
+			console.log(selectedObject);
+            selectedObject.material = materialSelected;
+			transformControl.attach( selectedObject );
         }
 
     }
