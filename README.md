@@ -2,7 +2,9 @@
 A simple 3D CAD web app 
 
 ## To Do
-- Function to drag and drop a cube
+- buttons + keys to switch to translate, rotate, scale
+- Function to add a cube
+- button + key to remove a cube
 - Click and drag elements, faces, edges, vertex
 - Rotate elements
 - Create the obj, stl, and other file format importers
