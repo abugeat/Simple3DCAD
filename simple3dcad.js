@@ -349,4 +349,9 @@ document.addEventListener('keydown', function(event) {
 		params.scale();
 	}
 
+	// remove cube (delete)
+	if(event.key == "Delete") {
+		removeCube();
+	}
+
 });
