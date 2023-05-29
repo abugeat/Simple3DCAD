@@ -38,6 +38,23 @@ raycaster.firstHitOnly = true;
 //     { color: 0xff6347, transparent: true, opacity:0.5 }
 // );
 
+const params = {
+	"addCube": () => addCube(),
+	"translate": () => {
+		transformControl.setMode( 'translate' );
+		renderer.render( scene, camera );
+	},
+	"rotate": () => {
+		transformControl.setMode( 'rotate' );
+		renderer.render( scene, camera );
+	},
+	"scale": () => {
+		transformControl.setMode( 'scale' );
+		renderer.render( scene, camera );
+	},
+};
+
+
 
 
 init();
@@ -95,7 +112,7 @@ function init() {
 
 	// TransformControl setup
 	transformControl = new TransformControls(camera, renderer.domElement);
-	transformControl.setMode('translate'); // 'translate', 'rotate' or 'scale'
+	transformControl.setMode('rotate'); // 'translate', 'rotate' or 'scale'
 	transformControl.addEventListener( 'dragging-changed', function ( event ) {
 		controls.enabled = ! event.value;
 	} );
@@ -105,6 +122,10 @@ function init() {
     // lil-gui setup
     const gui = new dat.GUI();
     gui.title("Simple3DCAD");
+	gui.add( params, 'addCube' ).name( 'Add cube' );
+	gui.add( params, 'translate' ).name( 'Translate' );
+	gui.add( params, 'rotate' ).name( 'Rotate' );
+	gui.add( params, 'scale' ).name( 'Scale' );
     
     // resize eventlistener
 	window.addEventListener( 'resize', function () {

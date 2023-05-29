@@ -41,7 +41,6 @@ body {
     width: 10px;
     height: 100%;
 }
-#gui { position: absolute; top: 2px; left: 2px }
 
 
 
@@ -80,6 +79,9 @@ body {
 
 
 .lil-gui {
+    /* position: absolute; 
+    top: 0px; 
+    left: 0px; */
 	--title-background-color: #00b16a;
 	--font-family: monospace;
 	--font-family-mono: monospace;
