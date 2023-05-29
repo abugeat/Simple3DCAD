@@ -38348,12 +38348,14 @@ BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 let renderer, scene, camera, controls, transformControl;
 let geometry, containerObj;
 let selectedObject = null;
+let hoveredObject = null;
 geometry = null;
 
+let gui;
 
 let material = new MeshPhongMaterial( { color: 0x999999 , side: DoubleSide} );
 let materialSelected = new MeshPhongMaterial( { color: '#00b16a' , side: DoubleSide} );
-let materialHover = new MeshPhongMaterial( { color: '#ff6347' , side: DoubleSide} );
+let materialHover = new MeshPhongMaterial( { color: '#65a88d' , side: DoubleSide} );
 // geometry = new THREE.BufferGeometry();
 // geometry = new THREE.SphereGeometry(1);
 
@@ -38368,8 +38370,9 @@ raycaster.firstHitOnly = true;
 //     { color: 0xff6347, transparent: true, opacity:0.5 }
 // );
 
-const params = {
+let params = {
 	"addCube": () => addCube(),
+	"removeCube": () => removeCube(),
 	"translate": () => {
 		transformControl.setMode( 'translate' );
 		renderer.render( scene, camera );
@@ -38382,6 +38385,7 @@ const params = {
 		transformControl.setMode( 'scale' );
 		renderer.render( scene, camera );
 	},
+	"transformControlAxis": "local",
 };
 
 
@@ -38442,6 +38446,7 @@ function init() {
 
 	// TransformControl setup
 	transformControl = new TransformControls(camera, renderer.domElement);
+	transformControl.setSpace('local'); // 'local' or 'world' (move object on axis or on plane)
 	transformControl.setMode('rotate'); // 'translate', 'rotate' or 'scale'
 	transformControl.addEventListener( 'dragging-changed', function ( event ) {
 		controls.enabled = ! event.value;
@@ -38450,12 +38455,19 @@ function init() {
 	scene.add(transformControl);
 
     // lil-gui setup
-    const gui = new g();
+    gui = new g();
     gui.title("Simple3DCAD");
-	gui.add( params, 'addCube' ).name( 'Add cube' );
-	gui.add( params, 'translate' ).name( 'Translate' );
-	gui.add( params, 'rotate' ).name( 'Rotate' );
-	gui.add( params, 'scale' ).name( 'Scale' );
+	gui.add( params, 'addCube' ).name( '🔲 Add cube [C]' );
+	gui.add( params, 'removeCube' ).name( '❌ Remove cube [del]' );
+	gui.add( params, 'translate' ).name( 'Translate [T]' );
+	gui.add( params, 'rotate' ).name( 'Rotate [R]' );
+	gui.add( params, 'scale' ).name( 'Scale [S]' );
+	gui.add( params, 'transformControlAxis', {"Local": 'local', "Global": 'global'})
+		.name( 'Controller axis' )
+		.onChange( function ( value ) {
+			transformControl.setSpace( value );
+		});
+
     
     // resize eventlistener
 	window.addEventListener( 'resize', function () {
@@ -38470,7 +38482,18 @@ function init() {
 	}, false );
 
     document.addEventListener( 'pointermove', onPointerMove );
-	document.addEventListener( 'dblclick', onMouseDown );
+	document.addEventListener( 'dblclick', onDblClickDown );
+}
+
+function removeCube() {
+	// remove the selected object
+	if ( selectedObject ) {
+		containerObj.remove( selectedObject );
+		selectedObject = null;
+		transformControl.detach();
+		renderer.render( scene, camera );
+	}
+
 }
 
 function addCube() {
@@ -38514,9 +38537,9 @@ function addCube() {
 	transformControl.attach( mesh_cube );
 
 
-	mesh_cube.addEventListener( 'click', function () {
-		transformcontrol.visible = !transformcontrol.visible;
-	} );
+	// mesh_cube.addEventListener( 'click', function () {
+	// 	transformControl.visible = !transformControl.visible;
+	// } );
 	
 
 	if (geometry == null) {
@@ -38525,9 +38548,32 @@ function addCube() {
 		geometry = mergeGeometries([geometry, geometry_cube]);
 	}
 
+
+	changeSelected(mesh_cube);
+
+
     renderer.render( scene, camera );
 
     letcomputeBoundsTree();
+}
+
+function changeSelected(selected) {
+	// change material of previous selected object
+	if ( selectedObject ) {
+		selectedObject.material = material;
+	}
+
+	// change material of new selected object
+	if ( selected ) {
+		selectedObject = selected;
+		selectedObject.material = materialSelected;
+		transformControl.attach( selectedObject );
+	} else {
+		selectedObject = null;
+		transformControl.detach();
+	}
+
+
 }
 
 function letcomputeBoundsTree() {
@@ -38542,9 +38588,9 @@ function letcomputeBoundsTree() {
 
 function onPointerMove( event ) {
 
-    if ( selectedObject ) {
+    if ( hoveredObject && hoveredObject != selectedObject) {
 
-        selectedObject.material= material;
+        hoveredObject.material= material;
 
     }
 
@@ -38562,9 +38608,9 @@ function onPointerMove( event ) {
             return res && res.object;
         })[0];
 
-        if ( res && res.object) {
-            selectedObject = res.object;
-            selectedObject.material = materialHover;
+        if ( res && res.object && res.object != selectedObject) {
+            hoveredObject = res.object;
+            hoveredObject.material = materialHover;
 			// transformControl.attach( selectedObject );
         }
 
@@ -38574,8 +38620,16 @@ function onPointerMove( event ) {
 
 }
 
-function onMouseDown(event) {
+function onDblClickDown(event) {
 	// isMouseDown = true;
+
+	if ( selectedObject ) {
+		changeSelected(null);
+		// selectedObject.material = material;
+
+		// selectedObject = null;
+
+	}
 
 	pointer.x = ( event.clientX / window.innerWidth ) * 2 - 1;
     pointer.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
@@ -38592,12 +38646,36 @@ function onMouseDown(event) {
         })[0];
 
         if ( res && res.object) {
-            selectedObject = res.object;
-            selectedObject.material = materialSelected;
-			transformControl.attach( selectedObject );
+            changeSelected(res.object);
         }
 
     }
 
     renderer.render( scene, camera );
-  }
+}
+
+
+// on "k" key pressed
+document.addEventListener('keydown', function(event) {
+	
+	// add cube
+	if(event.key == "c") {
+		addCube();
+	}
+
+	// translate
+	if(event.key == "t") {
+		params.translate();
+	}
+
+	// rotate
+	if(event.key == "r") {
+		params.rotate();
+	}
+
+	// scale
+	if(event.key == "s") {
+		params.scale();
+	}
+
+});
