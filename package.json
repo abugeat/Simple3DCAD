@@ -1,6 +1,7 @@
 {
   "name": "simple3dcad",
   "version": "1.0.0",
+  "type": "module",
   "description": "A simple 3D CAD web app",
   "main": "index.js",
   "scripts": {

@@ -32260,43 +32260,6 @@ SeparatingAxisBounds.prototype.setFromBox = ( function () {
 
 } )();
 
-( (function () {
-
-	const cacheSatBounds = new SeparatingAxisBounds();
-	return function areIntersecting( shape1, shape2 ) {
-
-		const points1 = shape1.points;
-		const satAxes1 = shape1.satAxes;
-		const satBounds1 = shape1.satBounds;
-
-		const points2 = shape2.points;
-		const satAxes2 = shape2.satAxes;
-		const satBounds2 = shape2.satBounds;
-
-		// check axes of the first shape
-		for ( let i = 0; i < 3; i ++ ) {
-
-			const sb = satBounds1[ i ];
-			const sa = satAxes1[ i ];
-			cacheSatBounds.setFromPoints( sa, points2 );
-			if ( sb.isSeparated( cacheSatBounds ) ) return false;
-
-		}
-
-		// check axes of the second shape
-		for ( let i = 0; i < 3; i ++ ) {
-
-			const sb = satBounds2[ i ];
-			const sa = satAxes2[ i ];
-			cacheSatBounds.setFromPoints( sa, points1 );
-			if ( sb.isSeparated( cacheSatBounds ) ) return false;
-
-		}
-
-	};
-
-}) )();
-
 const closestPointLineToLine = ( function () {
 
 	// https://github.com/juj/MathGeoLib/blob/master/src/Geometry/Line.cpp#L56
@@ -38340,6 +38303,286 @@ function mergeAttributes( attributes ) {
 
 }
 
+class OBJExporter {
+
+	parse( object ) {
+
+		let output = '';
+
+		let indexVertex = 0;
+		let indexVertexUvs = 0;
+		let indexNormals = 0;
+
+		const vertex = new Vector3();
+		const color = new Color();
+		const normal = new Vector3();
+		const uv = new Vector2();
+
+		const face = [];
+
+		function parseMesh( mesh ) {
+
+			let nbVertex = 0;
+			let nbNormals = 0;
+			let nbVertexUvs = 0;
+
+			const geometry = mesh.geometry;
+
+			const normalMatrixWorld = new Matrix3();
+
+			// shortcuts
+			const vertices = geometry.getAttribute( 'position' );
+			const normals = geometry.getAttribute( 'normal' );
+			const uvs = geometry.getAttribute( 'uv' );
+			const indices = geometry.getIndex();
+
+			// name of the mesh object
+			output += 'o ' + mesh.name + '\n';
+
+			// name of the mesh material
+			if ( mesh.material && mesh.material.name ) {
+
+				output += 'usemtl ' + mesh.material.name + '\n';
+
+			}
+
+			// vertices
+
+			if ( vertices !== undefined ) {
+
+				for ( let i = 0, l = vertices.count; i < l; i ++, nbVertex ++ ) {
+
+					vertex.fromBufferAttribute( vertices, i );
+
+					// transform the vertex to world space
+					vertex.applyMatrix4( mesh.matrixWorld );
+
+					// transform the vertex to export format
+					output += 'v ' + vertex.x + ' ' + vertex.y + ' ' + vertex.z + '\n';
+
+				}
+
+			}
+
+			// uvs
+
+			if ( uvs !== undefined ) {
+
+				for ( let i = 0, l = uvs.count; i < l; i ++, nbVertexUvs ++ ) {
+
+					uv.fromBufferAttribute( uvs, i );
+
+					// transform the uv to export format
+					output += 'vt ' + uv.x + ' ' + uv.y + '\n';
+
+				}
+
+			}
+
+			// normals
+
+			if ( normals !== undefined ) {
+
+				normalMatrixWorld.getNormalMatrix( mesh.matrixWorld );
+
+				for ( let i = 0, l = normals.count; i < l; i ++, nbNormals ++ ) {
+
+					normal.fromBufferAttribute( normals, i );
+
+					// transform the normal to world space
+					normal.applyMatrix3( normalMatrixWorld ).normalize();
+
+					// transform the normal to export format
+					output += 'vn ' + normal.x + ' ' + normal.y + ' ' + normal.z + '\n';
+
+				}
+
+			}
+
+			// faces
+
+			if ( indices !== null ) {
+
+				for ( let i = 0, l = indices.count; i < l; i += 3 ) {
+
+					for ( let m = 0; m < 3; m ++ ) {
+
+						const j = indices.getX( i + m ) + 1;
+
+						face[ m ] = ( indexVertex + j ) + ( normals || uvs ? '/' + ( uvs ? ( indexVertexUvs + j ) : '' ) + ( normals ? '/' + ( indexNormals + j ) : '' ) : '' );
+
+					}
+
+					// transform the face to export format
+					output += 'f ' + face.join( ' ' ) + '\n';
+
+				}
+
+			} else {
+
+				for ( let i = 0, l = vertices.count; i < l; i += 3 ) {
+
+					for ( let m = 0; m < 3; m ++ ) {
+
+						const j = i + m + 1;
+
+						face[ m ] = ( indexVertex + j ) + ( normals || uvs ? '/' + ( uvs ? ( indexVertexUvs + j ) : '' ) + ( normals ? '/' + ( indexNormals + j ) : '' ) : '' );
+
+					}
+
+					// transform the face to export format
+					output += 'f ' + face.join( ' ' ) + '\n';
+
+				}
+
+			}
+
+			// update index
+			indexVertex += nbVertex;
+			indexVertexUvs += nbVertexUvs;
+			indexNormals += nbNormals;
+
+		}
+
+		function parseLine( line ) {
+
+			let nbVertex = 0;
+
+			const geometry = line.geometry;
+			const type = line.type;
+
+			// shortcuts
+			const vertices = geometry.getAttribute( 'position' );
+
+			// name of the line object
+			output += 'o ' + line.name + '\n';
+
+			if ( vertices !== undefined ) {
+
+				for ( let i = 0, l = vertices.count; i < l; i ++, nbVertex ++ ) {
+
+					vertex.fromBufferAttribute( vertices, i );
+
+					// transform the vertex to world space
+					vertex.applyMatrix4( line.matrixWorld );
+
+					// transform the vertex to export format
+					output += 'v ' + vertex.x + ' ' + vertex.y + ' ' + vertex.z + '\n';
+
+				}
+
+			}
+
+			if ( type === 'Line' ) {
+
+				output += 'l ';
+
+				for ( let j = 1, l = vertices.count; j <= l; j ++ ) {
+
+					output += ( indexVertex + j ) + ' ';
+
+				}
+
+				output += '\n';
+
+			}
+
+			if ( type === 'LineSegments' ) {
+
+				for ( let j = 1, k = j + 1, l = vertices.count; j < l; j += 2, k = j + 1 ) {
+
+					output += 'l ' + ( indexVertex + j ) + ' ' + ( indexVertex + k ) + '\n';
+
+				}
+
+			}
+
+			// update index
+			indexVertex += nbVertex;
+
+		}
+
+		function parsePoints( points ) {
+
+			let nbVertex = 0;
+
+			const geometry = points.geometry;
+
+			const vertices = geometry.getAttribute( 'position' );
+			const colors = geometry.getAttribute( 'color' );
+
+			output += 'o ' + points.name + '\n';
+
+			if ( vertices !== undefined ) {
+
+				for ( let i = 0, l = vertices.count; i < l; i ++, nbVertex ++ ) {
+
+					vertex.fromBufferAttribute( vertices, i );
+					vertex.applyMatrix4( points.matrixWorld );
+
+					output += 'v ' + vertex.x + ' ' + vertex.y + ' ' + vertex.z;
+
+					if ( colors !== undefined ) {
+
+						color.fromBufferAttribute( colors, i ).convertLinearToSRGB();
+
+						output += ' ' + color.r + ' ' + color.g + ' ' + color.b;
+
+					}
+
+					output += '\n';
+
+				}
+
+				output += 'p ';
+
+				for ( let j = 1, l = vertices.count; j <= l; j ++ ) {
+
+					output += ( indexVertex + j ) + ' ';
+
+				}
+
+				output += '\n';
+
+			}
+
+			// update index
+			indexVertex += nbVertex;
+
+		}
+
+		object.traverse( function ( child ) {
+
+			if ( child.isMesh === true ) {
+
+				parseMesh( child );
+
+			}
+
+			if ( child.isLine === true ) {
+
+				parseLine( child );
+
+			}
+
+			if ( child.isPoints === true ) {
+
+				parsePoints( child );
+
+			}
+
+		} );
+
+		return output;
+
+	}
+
+}
+
+// TODO: most of the time, the 3D model is accessed with scene.children[3].
+// 	 It would be better to do it differently. Maybe with a global variable or its uuid.
+
+
 Mesh.prototype.raycast = acceleratedRaycast;
 BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
@@ -38386,6 +38629,7 @@ let params = {
 		renderer.render( scene, camera );
 	},
 	"transformControlAxis": "local",
+	"saveModelInOBJ": () => saveModelInOBJ(),
 };
 
 
@@ -38433,7 +38677,7 @@ function init() {
 	// camera.position.set(0, 10, 10) ;
 	camera.far = 100000;
 	camera.updateProjectionMatrix();
-    camera.position.set( 1, 2, 3);
+    camera.position.set( 10, 20, 30);
 
 	// control setup
 	controls = new OrbitControls( camera, renderer.domElement );
@@ -38467,6 +38711,7 @@ function init() {
 		.onChange( function ( value ) {
 			transformControl.setSpace( value );
 		});
+	gui.add( params, 'saveModelInOBJ' ).name( '💾 Save model in OBJ' );
 
     
     // resize eventlistener
@@ -38498,14 +38743,14 @@ function removeCube() {
 
 function addCube() {
 	let randomSize = [
-		Math.random() * 0.5 + 0.1, 
-		Math.random() * 0.5 + 0.1, 
-		Math.random() * 0.5 + 0.1
+		Math.random() * 10.0 + 1.0, 
+		Math.random() * 10.0 + 1.0, 
+		Math.random() * 10.0 + 1.0
 	];
 	let randomPosition = [
-		Math.random() * 1, 
-		Math.random() * 1, 
-		Math.random() * 1
+		(Math.random()-Math.random()) * 20, 
+		Math.random() * 5,
+		(Math.random()-Math.random()) * 20, 
 	];
 
 	let geometry_cube = new BoxGeometry(
@@ -38684,3 +38929,21 @@ document.addEventListener('keydown', function(event) {
 	}
 
 });
+
+function saveModelInOBJ() {
+	// Instantiate an exporter
+	const exporter = new OBJExporter();
+
+	// Parse the input and generate the OBJ output
+	const data = exporter.parse( scene.children[3] );
+	console.log(scene);
+	
+	// download the file
+	const blob = new Blob([data], { type: 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = 'model.obj';
+	link.click();
+	URL.revokeObjectURL(url);
+}

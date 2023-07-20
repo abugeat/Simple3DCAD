@@ -1,3 +1,5 @@
+// TODO: most of the time, the 3D model is accessed with scene.children[3].
+// 	 It would be better to do it differently. Maybe with a global variable or its uuid.
 
 import * as dat from 'three/examples/jsm/libs/lil-gui.module.min.js';
 import * as THREE from 'three';
@@ -9,6 +11,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { OBJExporter } from 'three/addons/exporters/OBJExporter.js';
 
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -56,6 +59,7 @@ let params = {
 		renderer.render( scene, camera );
 	},
 	"transformControlAxis": "local",
+	"saveModelInOBJ": () => saveModelInOBJ(),
 };
 let controller_transformControlAxis;
 
@@ -104,7 +108,7 @@ function init() {
 	// camera.position.set(0, 10, 10) ;
 	camera.far = 100000;
 	camera.updateProjectionMatrix();
-    camera.position.set( 1, 2, 3);
+    camera.position.set( 10, 20, 30);
 
 	// control setup
 	controls = new OrbitControls( camera, renderer.domElement );
@@ -138,6 +142,7 @@ function init() {
 		.onChange( function ( value ) {
 			transformControl.setSpace( value );
 		});
+	gui.add( params, 'saveModelInOBJ' ).name( '💾 Save model in OBJ' );
 
     
     // resize eventlistener
@@ -169,14 +174,14 @@ function removeCube() {
 
 function addCube() {
 	let randomSize = [
-		Math.random() * 0.5 + 0.1, 
-		Math.random() * 0.5 + 0.1, 
-		Math.random() * 0.5 + 0.1
+		Math.random() * 10.0 + 1.0, 
+		Math.random() * 10.0 + 1.0, 
+		Math.random() * 10.0 + 1.0
 	];
 	let randomPosition = [
-		Math.random() * 1, 
-		Math.random() * 1, 
-		Math.random() * 1
+		(Math.random()-Math.random()) * 20, 
+		Math.random() * 5,
+		(Math.random()-Math.random()) * 20, 
 	];
 
 	let geometry_cube = new THREE.BoxGeometry(
@@ -355,3 +360,21 @@ document.addEventListener('keydown', function(event) {
 	}
 
 });
+
+function saveModelInOBJ() {
+	// Instantiate an exporter
+	const exporter = new OBJExporter();
+
+	// Parse the input and generate the OBJ output
+	const data = exporter.parse( scene.children[3] );
+	console.log(scene);
+	
+	// download the file
+	const blob = new Blob([data], { type: 'text/plain' });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = 'model.obj';
+	link.click();
+	URL.revokeObjectURL(url);
+}
