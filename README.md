@@ -11,7 +11,6 @@ A simple 3D CAD web app
 
 Later:
 - Allow CTRL + Z and CTRL + Y
-- *Copy andrewmarsh ;)*
 - best Edit a 3D model imported
 
 ## Notes
